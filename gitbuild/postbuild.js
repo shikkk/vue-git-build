@@ -1,128 +1,134 @@
 const fs = require('fs-extra')
 const path = require('path')
-const appPath = process.cwd()
-// const common = require('../system/webpack/common')
 const git = require('simple-git')
+// const AdmZip = require('adm-zip')
+const appPath = process.cwd()
 const ora = require('ora')
+const ProgressBar = require('progress')
+const glob = require('glob')
+const uploadFile = require('./libs/upload-file')
 
-const repoURL = 'git@github.com:shikkk/vue-git-build.git'
+const uploadToCDN = false
 const dirs = {
-  live: path.resolve(appPath, './build-dist'),
+  live: path.resolve(appPath, './dist'),
 }
-
 const branch = {
-  live: 'dist'
+    live: 'dist'
 }
 
 const spinner = (options = {}) => {
-  const waiting = ora(
-    Object.assign(
-      {
-        spinner: 'dots',
-        color: 'cyan'
-      },
-      typeof options === 'string' ? {
-        text: options
-      } : options
-    )
-  ).start()
+    const waiting = ora(
+        Object.assign(
+            {
+                spinner: 'dots',
+                color: 'cyan'
+            },
+            typeof options === 'string' ? {
+                text: options
+            } : options
+        )
+    ).start()
 
-  waiting.finish = (options = {}) => {
-    waiting.color = 'green'
-    waiting.stopAndPersist(Object.assign({
-      symbol: '√'
-    }, options))
-  }
+    waiting.finish = (options = {}) => {
+        waiting.color = 'green'
+        waiting.stopAndPersist(Object.assign({
+            symbol: '√'
+        }, options))
+    }
 
-  return waiting
+    return waiting
 }
 
-// const arrDirs = [
-//     dirs.qa,
-//     dirs.live
-// ]
-
 const run = async () => {
-  // await fs.remove(
-  //     path.resolve(appPath, common.outputPath)
-  // )
-  // await Promise.all(arrDirs.map(
-  //     dir => new Promise((resolve, reject) => {
-  //         fs.readdir(dir, (err, files) => {
-  //             if (err) reject(err)
-  //             else resolve(files.filter(filename => filename.substr(0, 1) !== '.'))
-  //         })
-  //     }).then(files => Promise.all(
-  //         files.map(file =>
-  //             fs.remove(
-  //                 path.resolve(dir, file)
-  //             )
-  //         )
-  //     ))
-  // ))
-  // 读取package.json里的版本数据
-  const {
-    version,
-    'version-keep': versionKeep,
-  } = fs.readJsonSync(path.resolve(__dirname, '../package.json'))
-  const versions = [version, versionKeep]
 
-  let chain = new Promise(resolve => resolve())
+    console.log(`postbuild`)
 
-  for (const type in dirs) {
-    const dir = dirs[type]
+    for (const type in dirs) {
+        const dir = dirs[type]
+        const repo = git(dir)
 
-    chain = chain
-      .then(() => new Promise((resolve, reject) => {
-        // 确保repo目录
-        // 如果不存在，执行clone
-        if (fs.existsSync(dir) && fs.lstatSync(dir).isDirectory())
-          return resolve()
+        console.log('')
+        console.log(`${type} `.padEnd(50, '─'))
 
-        const waiting = spinner(`${type} directory not exists. cloning...`)
+        if (uploadToCDN) {
+            // 获取文件列表
+            const files = await new Promise(async (resolve/*, reject*/) => {
+                const files = await new Promise(resolve => {
+                    glob(
+                        path.resolve(dir, 'includes/**/*'),
+                        {},
+                        (err, files) => {
+                            resolve(files.filter(file => (
+                                !fs.lstatSync(file).isDirectory()
+                            )))
+                        }
+                    )
+                })
+                resolve(files)
+            })
 
-        git().clone(repoURL, dir, [
-          '--single-branch',
-          `-b${branch[type]}`
-        ]).exec(() => {
-          waiting.finish()
-          resolve()
-        })
-      }))
-      .then(() => new Promise(resolve => {
-        const waiting = spinner(`${type} pulling...`)
-        git(dir)
-          .pull()
-          .exec(() => {
+            {// 上传文件
+                const bar = new ProgressBar(
+                    `   uploading assets [:bar] :current / :total`,
+                    {
+                        total: files.length,
+                        width: 20,
+                        complete: '■',
+                        incomplete: '─'
+                    }
+                )
+                // console.log(files)
+                await new Promise(resolve => {
+                    let chainUpload = new Promise(resolve => resolve())
+                    files.forEach((file) => {
+                        chainUpload = chainUpload
+                            .then(() => uploadFile(file, 'includes', type))
+                            .then(() => bar.tick())
+                        // .then(() => console.log(`${index + 1} / ${files.length}`))
+                        // .then(res => console.log(res))
+                    })
+                    chainUpload = chainUpload.then(() => resolve())
+                })
+            }
+        }
+
+        { // git 操作
+            const waiting = spinner(` commiting & pushing...`)
+            await new Promise((resolve/*, reject*/) => {
+                // console.log(repo)
+                repo.add('./*')
+                    .commit(`build ${(new Date()).toLocaleString()}`)
+                    .push('origin', branch[type], () => resolve('done'))
+                    .exec(() => {
+                        resolve()
+                    })
+                // resolve()
+            })
             waiting.finish()
+        }
+
+        await new Promise(resolve => setTimeout(() =>
             resolve()
-          })
-      }))
-      .then(() => new Promise((resolve, reject) => {
-        fs.readdir(dir, (err, files) => {
-          if (err) reject(err)
-          else resolve(files.filter(filename => {
-            // if (
-            //     fs.lstatSync(path.resolve(dir, filename)).isDirectory() &&
-            //     filename.substr(0, 4) === 'rev-' &&
-            //     versions.includes(filename.substr(4))
-            // ) {
-            //     // const ts = filename.substr(4)
-            //     // revisions.push(ts)
-            //     return false
-            // }
-            return filename.substr(0, 1) !== '.'
-          }))
-        })
-      }))
-      .then(files => Promise.all(
-        files.map(file =>
-          fs.remove(
-            path.resolve(dir, file)
-          )
-        )))
-      .then(() => console.log(`${type} is now empty`))
-  }
+        ), 50)
+        console.log(`√  complete`)
+        // const waiting = spinner(`${type} uploading assets...`)
+        // waiting.finish()
+        // .then(() => new Promise((resolve, reject) => {
+        //     // console.log(repo)
+        //     repo.add('./*')
+        //         .commit(`build ${(new Date()).toLocaleString()}`)
+        //         .push('origin', branch[type], () => resolve('done'))
+        //         .exec(() => {
+        //             waiting.finish()
+        //             resolve()
+        //         })
+        //     // resolve()
+        // }))
+    }
+
+    console.log('')
+    console.log(`All complete! ${new Date()}`)
+    console.log('')
 }
 
 run()

@@ -5,14 +5,12 @@ const appPath = process.cwd()
 const git = require('simple-git')
 const ora = require('ora')
 
-const repoURL = 'git@gitlab.liebaopay.com:CVCustomized/front/FaceMob.git'
+const repoURL = 'https://github.com/shikkk/vue-git-build.git'
 
 const dirs = {
-  live: path.resolve(appPath, './build-dist'),
+  live: path.resolve(appPath, './dist'),
 }
 const branch = {
-  qa: 'dev-dist',
-  tx1: 'tx1',
   live: 'dist'
 }
 

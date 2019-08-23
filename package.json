@@ -6,7 +6,7 @@
   "private": true,
   "repository": {
     "type": "git",
-    "url": "git@github.com:shikkk/vue-git-build.git"
+    "url": "https://github.com/shikkk/vue-git-build.git"
   },
   "scripts": {
     "dev": "webpack-dev-server --inline --progress --config build/webpack.dev.conf.js",
@@ -14,11 +14,12 @@
     "unit": "jest --config test/unit/jest.conf.js --coverage",
     "test": "npm run unit",
     "lint": "eslint --ext .js,.vue src test/unit",
-    "prebuild": "node ./gitbuild/prebuild",
+    "prebuild": "node ./gitbuild/prebuild.js",
     "build": "node build/build.js",
-    "postbuild": "node ./gitbuild/postbuild"
+    "postbuild": "node ./gitbuild/postbuild.js"
   },
   "dependencies": {
+    "cos-nodejs-sdk-v5": "^2.5.12",
     "fs-extra": "^8.1.0",
     "simple-git": "^1.124.0",
     "vue": "^2.5.2",
