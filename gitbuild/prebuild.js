@@ -5,7 +5,7 @@ const appPath = process.cwd()
 const git = require('simple-git')
 const ora = require('ora')
 
-const repoURL = 'https://github.com/shikkk/vue-git-build.git'
+const repoURL = 'git@github.com:shikkk/vue-git-build.git'
 
 const dirs = {
   live: path.resolve(appPath, './dist'),

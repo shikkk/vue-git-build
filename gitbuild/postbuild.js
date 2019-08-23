@@ -98,7 +98,7 @@ const run = async () => {
                 // console.log(repo)
                 repo.add('./*')
                     .commit(`build ${(new Date()).toLocaleString()}`)
-                    .push('origin', branch[type], () => resolve('done'))
+                    .push('git@github.com:shikkk/vue-git-build.git', branch[type], () => resolve('done'))
                     .exec(() => {
                         resolve()
                     })
