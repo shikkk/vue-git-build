@@ -2,21 +2,9 @@ const path = require('path')
 // const fs = require('fs-extra')
 const COS = require('cos-nodejs-sdk-v5')
 
-/*
-    'cdnhost' => 'https://cmshopimg.cmcm.com',
-    'bucket' => 'cmshop',
-    'app_id' => '1252921383',
-    'secret_id' => 'AKIDEWo7OnHdzxyyxvmudvIh4QlM9Fwgi6mW',
-    'secret_key' => '9PZXaVFmKuQStPn371iDV7dz85pNiqmV',
-    'region' => 'gz',   // bucket所属地域：华北 'tj' 华东 'sh' 华南 'gz'
-    'timeout' => 60
- */
 
 // 创建实例
-const cos = new COS({
-  SecretId: 'AKIDEWo7OnHdzxyyxvmudvIh4QlM9Fwgi6mW',
-  SecretKey: '9PZXaVFmKuQStPn371iDV7dz85pNiqmV',
-})
+const cos = new COS()
 
 const upload = async (file, baseDir, prefixDir) => new Promise((resolve, reject) => {
   const {
