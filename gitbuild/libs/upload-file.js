@@ -3,7 +3,7 @@ const path = require('path')
 const COS = require('cos-nodejs-sdk-v5')
 
 
-// 创建实例
+// 创建
 const cos = new COS()
 
 const upload = async (file, baseDir, prefixDir) => new Promise((resolve, reject) => {
@@ -28,8 +28,8 @@ const upload = async (file, baseDir, prefixDir) => new Promise((resolve, reject)
   // console.log(file, key)
   // resolve()
   const update = (onSuccess) => cos.sliceUploadFile({
-    Bucket: 'cmshop-1252921383',
-    Region: 'ap-guangzhou',
+    Bucket: '',
+    Region: '',
     Key: key,
     FilePath: file
   }, function (err, data) {
