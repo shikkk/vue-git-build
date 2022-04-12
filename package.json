@@ -21,7 +21,7 @@
   "dependencies": {
     "cos-nodejs-sdk-v5": "^2.5.12",
     "fs-extra": "^8.1.0",
-    "simple-git": "^1.124.0",
+    "simple-git": "^3.5.0",
     "vue": "^2.5.2",
     "vue-router": "^3.0.1"
   },
